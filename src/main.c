@@ -5,7 +5,7 @@
 
 #define WIDTH 40
 #define HEIGHT 40
-#define INITIAL_LENGTH 2
+#define INITIAL_LENGTH 10
 #define PANEL_SIZE 6 // Size of the score panel
 #define SCORE_FONT GLUT_BITMAP_TIMES_ROMAN_24 // Font for the score
 
@@ -38,6 +38,11 @@ bool snakeTexture[2][2] = {
     {false, true}
 };
 
+/*
+ * Initializes the game environment including snake's initial length, direction,
+ * score, placement of walls, placement of initial food, and random placement of
+ * wall obstacles. This function must be called before starting the game.
+ */
 void initialize() {
     snake.length = INITIAL_LENGTH;
     snake.direction = 1;
@@ -64,7 +69,7 @@ void initialize() {
     generateFood();
 
     // Place random wall obstacles
-    for (int i = 0; i < WIDTH * HEIGHT / 50; ++i) { // Adjust density as needed
+    for (int i = 0; i < WIDTH * HEIGHT / 1000; ++i) { // Adjust density as needed
         int obstacleX = rand() % (WIDTH - 2) + 1; // Exclude the borders
         int obstacleY = rand() % (HEIGHT - 2) + 1;
         walls[obstacleX][obstacleY] = true;
@@ -216,6 +221,11 @@ void update(int value) {
             printf("Score: %d\n", snake.score); // Debug output
         }
 
+        //check forcollision with tale 
+        if (snake.body[0].x == snake.body[snake.length -1].x && snake.body[0].y == snake.body[snake.length -1].y) {
+            snake.game_over = true;
+        }   
+
         // Redraw
         glutPostRedisplay();
         glutTimerFunc(100, update, 0);
@@ -242,7 +252,18 @@ void keyboard(int key, int x, int y) {
 
 int main(int argc, char** argv) {
     initialize();
+    /*
+ * Initialize the GLUT library, preparing the environment for creating graphical
+ * user interfaces and handling input events. This function must be called before
+ * any other GLUT functions in your program.
+ */
     glutInit(&argc, argv);
+   
+    /*
+ * Set the display mode for the GLUT window, specifying the initial display mode 
+ * options such as color mode and buffering. This function must be called before 
+ * creating the GLUT window.
+ */
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
     glutInitWindowSize(WIDTH * 20, HEIGHT * 20);
     glutCreateWindow("Snake Game");
