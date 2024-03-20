@@ -5,7 +5,11 @@
 
 #define WIDTH 40
 #define HEIGHT 40
-#define INITIAL_LENGTH 2
+#define INITIAL_LENGTH 10
+#define PANEL_SIZE 6 // Size of the score panel
+#define SCORE_FONT GLUT_BITMAP_TIMES_ROMAN_24 // Font for the score
+
+#define PI 3.14159265
 
 typedef struct {
     int x;
@@ -16,6 +20,7 @@ typedef struct {
     Point body[WIDTH * HEIGHT];
     int length;
     int direction; // 0: up, 1: right, 2: down, 3: left
+    int score; // Add score field
     bool game_over;
 } Snake;
 
@@ -27,9 +32,21 @@ bool walls[WIDTH][HEIGHT] = {false};
 // Define food
 Point food;
 
+// Texture pattern for snake's body
+bool snakeTexture[2][2] = {
+    {true, false},
+    {false, true}
+};
+
+/*
+ * Initializes the game environment including snake's initial length, direction,
+ * score, placement of walls, placement of initial food, and random placement of
+ * wall obstacles. This function must be called before starting the game.
+ */
 void initialize() {
     snake.length = INITIAL_LENGTH;
     snake.direction = 1;
+    snake.score = 0; // Initialize score
 
     for (int i = 0; i < INITIAL_LENGTH; ++i) {
         snake.body[i].x = (WIDTH / 2) + i;
@@ -50,12 +67,44 @@ void initialize() {
 
     // Place initial food
     generateFood();
+
+    // Place random wall obstacles
+    for (int i = 0; i < WIDTH * HEIGHT / 1000; ++i) { // Adjust density as needed
+        int obstacleX = rand() % (WIDTH - 2) + 1; // Exclude the borders
+        int obstacleY = rand() % (HEIGHT - 2) + 1;
+        walls[obstacleX][obstacleY] = true;
+    }
 }
 
+void drawCircle(GLfloat x, GLfloat y, GLfloat radius) {
+    int i;
+    int triangleAmount = 20; //# of triangles used to draw circle
+    
+    //GLfloat radius = 0.8f; //radius
+    GLfloat twicePi = 2.0f * PI;
+    
+    glBegin(GL_TRIANGLE_FAN);
+        glVertex2f(x, y); // center of circle
+        for(i = 0; i <= triangleAmount; i++) {
+            glVertex2f(
+                x + (radius * cos(i *  twicePi / triangleAmount)), 
+                y + (radius * sin(i * twicePi / triangleAmount))
+            );
+        }
+    glEnd();
+}
+
+
 void drawSnake() {
-    glColor3f(0.0f, 1.0f, 0.0f); // Green color
     for (int i = 0; i < snake.length; ++i) {
-        glRectf(snake.body[i].x, snake.body[i].y, snake.body[i].x + 1, snake.body[i].y + 1);
+        int snakeTextureIndex = (i % 2 == 0) ? 0 : 1; // Alternate the texture pattern
+
+        // Apply texture
+        bool isGreen = snakeTexture[snakeTextureIndex][0];
+        glColor3f(isGreen ? 0.0f : 1.0f, 1.0f, 0.0f); // Green or black color
+        
+        // Draw circular snake body
+        drawCircle(snake.body[i].x + 0.5, snake.body[i].y + 0.5, 0.5);
     }
 }
 
@@ -73,7 +122,7 @@ void drawWalls() {
 
 // Draw food
 void drawFood() {
-    float radius = 0.25f; // Set the radius of the circle
+    float radius = 0.5f; // Set the radius of the circle
     int numSegments = 50; // Set the number of segments for the circle
 
     glColor3f(1.0f, 1.0f, 0.0f); // Set color to yellow
@@ -112,12 +161,30 @@ void generateFood() {
     }
 }
 
+void drawScoreText() {
+    glColor3f(1.0f, 1.0f, 1.0f); // White color for text
+
+    // Draw score text
+    char scoreStr[50];
+    sprintf(scoreStr, "Score: %d", snake.score);
+    int textPosX = (WIDTH - glutBitmapLength(GLUT_BITMAP_TIMES_ROMAN_24, (unsigned char*)scoreStr)) / 2;
+    int textPosY = HEIGHT / 2;
+
+    glRasterPos2i(textPosX, textPosY);
+    for (int i = 0; scoreStr[i] != '\0'; i++) {
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, scoreStr[i]);
+    }
+}
+
+
+
 void display() {
     glClear(GL_COLOR_BUFFER_BIT);
     glLoadIdentity();
     drawSnake();
     drawWalls(); // Draw walls
     drawFood(); // Draw food
+    drawScoreText(); // Draw score panel
     glutSwapBuffers();
 }
 
@@ -149,14 +216,22 @@ void update(int value) {
         // Check for collision with food
         if (snake.body[0].x == food.x && snake.body[0].y == food.y) {
             snake.length++;
+            snake.score++; // Increment score
             generateFood(); // Generate new food
+            printf("Score: %d\n", snake.score); // Debug output
         }
+
+        //check forcollision with tale 
+        if (snake.body[0].x == snake.body[snake.length -1].x && snake.body[0].y == snake.body[snake.length -1].y) {
+            snake.game_over = true;
+        }   
 
         // Redraw
         glutPostRedisplay();
         glutTimerFunc(100, update, 0);
     }
 }
+
 
 void keyboard(int key, int x, int y) {
     switch (key) {
@@ -177,7 +252,18 @@ void keyboard(int key, int x, int y) {
 
 int main(int argc, char** argv) {
     initialize();
+    /*
+ * Initialize the GLUT library, preparing the environment for creating graphical
+ * user interfaces and handling input events. This function must be called before
+ * any other GLUT functions in your program.
+ */
     glutInit(&argc, argv);
+   
+    /*
+ * Set the display mode for the GLUT window, specifying the initial display mode 
+ * options such as color mode and buffering. This function must be called before 
+ * creating the GLUT window.
+ */
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
     glutInitWindowSize(WIDTH * 20, HEIGHT * 20);
     glutCreateWindow("Snake Game");
