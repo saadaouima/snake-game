@@ -248,11 +248,37 @@ void generateFood() {
 
 
 void drawScorePanel() {
+    // Define panel colors
+    GLfloat panelColor1[3] = {0.2f, 0.2f, 0.2f}; // Dark gray
+    GLfloat panelColor2[3] = {0.4f, 0.4f, 0.4f}; // Light gray
+
     // Set the color to black for the panel background
-    glColor3f(0.0, 0.0, 0.0);
+    glColor3fv(panelColor1);
+
+    // Draw the background rectangle
     glBegin(GL_QUADS);
     glVertex2f(WIDTH - PANEL_SIZE, HEIGHT);
     glVertex2f(WIDTH, HEIGHT);
+    glVertex2f(WIDTH, HEIGHT - PANEL_SIZE);
+    glVertex2f(WIDTH - PANEL_SIZE, HEIGHT - PANEL_SIZE);
+    glEnd();
+
+    // Draw a border around the panel
+    glColor3f(1.0f, 1.0f, 1.0f); // White border color
+    glLineWidth(2.0f); // Set border line width
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(WIDTH - PANEL_SIZE, HEIGHT);
+    glVertex2f(WIDTH, HEIGHT);
+    glVertex2f(WIDTH, HEIGHT - PANEL_SIZE);
+    glVertex2f(WIDTH - PANEL_SIZE, HEIGHT - PANEL_SIZE);
+    glEnd();
+
+    // Draw a gradient background
+    glBegin(GL_QUADS);
+    glColor3fv(panelColor1);
+    glVertex2f(WIDTH - PANEL_SIZE, HEIGHT);
+    glVertex2f(WIDTH, HEIGHT);
+    glColor3fv(panelColor2);
     glVertex2f(WIDTH, HEIGHT - PANEL_SIZE);
     glVertex2f(WIDTH - PANEL_SIZE, HEIGHT - PANEL_SIZE);
     glEnd();
