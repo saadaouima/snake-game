@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdlib.h> // For rand()
 #include <math.h>
-#include <SOIL.h> // Include SOIL for texture loading
+#include <SOIL/SOIL.h> // Include SOIL for texture loading
 
 #define WIDTH 40
 #define HEIGHT 40
