@@ -14,6 +14,13 @@
 
 #define PI 3.14159265
 
+typedef enum {
+    HOME_SCREEN,
+    GAME_SCREEN
+} Screen;
+
+Screen currentScreen = HOME_SCREEN;  // Start with the home screen
+
 typedef struct {
     int x;
     int y;
@@ -330,15 +337,68 @@ void drawScore() {
     }
 }
 
+void drawHomeScreen() {
+ 
+   
+    // Set text color to white
+    glColor3f(0.0f, 0.0f, 1.0f);
+
+    // Draw "Start Game" button
+    glBegin(GL_QUADS);
+    glVertex2f(WIDTH / 2 - 10, HEIGHT / 2 - 2);
+    glVertex2f(WIDTH / 2 + 10, HEIGHT / 2 - 2);
+    glVertex2f(WIDTH / 2 + 10, HEIGHT / 2 + 2);
+    glVertex2f(WIDTH / 2 - 10, HEIGHT / 2 + 2);
+    glEnd();
+
+    // Draw "Start Game" text
+    float textPosX = WIDTH / 2 - 20;
+    float textPosY = HEIGHT / 2 + 1;
+
+    glRasterPos2f(textPosX, textPosY);
+    const char* text = "Press ENTER";
+    glutBitmapString(GLUT_BITMAP_HELVETICA_10, (unsigned char*)text);
+}
+
+
+
+
+void drawGameOver() {
+    // Set background color
+    //glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // Black background
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    // Set text color
+    glColor3f(1.0f, 0.0f, 0.0f);  // Red text
+
+    // Set position for text
+    float textPosX = WIDTH / 2 - 50;
+    float textPosY = HEIGHT / 2;
+
+    // Draw text
+    glRasterPos2f(textPosX, textPosY);
+    const char* text = "Game Over - Press Enter to Restart";
+    glutBitmapString(GLUT_BITMAP_HELVETICA_18, (unsigned char*)text);
+}
 
 void display() {
     glClear(GL_COLOR_BUFFER_BIT);
     glLoadIdentity();
-    drawSnake();
-    drawWalls(); // Draw walls
-    drawFood(); // Draw food
-    drawScorePanel(); // Draw panel
-    drawScore(); // Draw the score panel
+
+    switch (currentScreen) {
+        case HOME_SCREEN:
+            drawHomeScreen();
+            break;
+        case GAME_SCREEN:
+            drawSnake();
+            drawWalls(); // Draw walls
+            drawFood(); // Draw food
+            drawScorePanel(); // Draw panel
+            drawScore(); // Draw the score panel
+            if (snake.game_over) drawGameOver();
+            break;
+    }
+
     glutSwapBuffers();
 }
 
@@ -388,20 +448,35 @@ void update(int value) {
 }
 
 
-void keyboard(int key, int x, int y) {
-    switch (key) {
-        case GLUT_KEY_UP:
-            if (snake.direction != 2) snake.direction = 0;
-            break;
-        case GLUT_KEY_DOWN:
-            if (snake.direction != 0) snake.direction = 2;
-            break;
-        case GLUT_KEY_LEFT:
-            if (snake.direction != 1) snake.direction = 3;
-            break;
-        case GLUT_KEY_RIGHT:
-            if (snake.direction != 3) snake.direction = 1;
-            break;
+void keyboard(unsigned char key, int x, int y) {
+    if (currentScreen == HOME_SCREEN && key == 13) { // 13 is the ASCII code for Enter key
+        currentScreen = GAME_SCREEN;
+        initialize();  // Start the game
+    } else {
+        switch (key) {
+            case 27: // ASCII code for ESC key
+                exit(0);
+                break;
+        }
+    }
+}
+
+void specialKeys(int key, int x, int y) {
+    if (currentScreen != HOME_SCREEN) {
+        switch (key) {
+            case GLUT_KEY_UP:
+                if (snake.direction != 2) snake.direction = 0;
+                break;
+            case GLUT_KEY_DOWN:
+                if (snake.direction != 0) snake.direction = 2;
+                break;
+            case GLUT_KEY_LEFT:
+                if (snake.direction != 1) snake.direction = 3;
+                break;
+            case GLUT_KEY_RIGHT:
+                if (snake.direction != 3) snake.direction = 1;
+                break;
+        }
     }
 }
 
@@ -436,7 +511,8 @@ int main(int argc, char** argv) {
 
     glutReshapeFunc(reshape);
     glutTimerFunc(100, update, 0);
-    glutSpecialFunc(keyboard);
+    glutSpecialFunc(specialKeys); //use arrows
+    glutKeyboardFunc(keyboard);
     glutMainLoop();
     return 0;
 }
