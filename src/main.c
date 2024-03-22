@@ -8,10 +8,11 @@
 
 #define WIDTH 40
 #define HEIGHT 40
+#define MAX_MAPS 10  // Maximum number of maps
 #define INITIAL_LENGTH 10
 #define PANEL_SIZE 4 // Size of the score panel
 #define SCORE_FONT GLUT_BITMAP_TIMES_ROMAN_24 // Font for the score
-
+#define MAX_POINTS 100
 #define PI 3.14159265
 
 typedef enum {
@@ -21,10 +22,22 @@ typedef enum {
 
 Screen currentScreen = HOME_SCREEN;  // Start with the home screen
 
+// Global variable to keep track of the selected map
+int selectedMapIndex = 0;
+
 typedef struct {
     int x;
     int y;
 } Point;
+
+typedef struct {
+    char name[50];
+    Point schema[MAX_POINTS];
+    int schemaSize;
+} Map;
+
+Map mapList[MAX_MAPS][50]; // List of available maps
+int numMaps = 0;
 
 typedef struct {
     Point body[WIDTH * HEIGHT];
@@ -73,6 +86,14 @@ void initialize() {
     for (int j = 0; j < HEIGHT; ++j) {
         walls[0][j] = true;
         walls[WIDTH - 1][j] = true;
+    }
+
+    // Place inner walls based on the selected map schema
+    for (int i = 0; i < mapList[selectedMapIndex]->schemaSize; ++i) {
+        int x = mapList[selectedMapIndex]->schema[i].x;
+        int y = mapList[selectedMapIndex]->schema[i].y;
+        printf("%d - %d",x,y);
+        walls[WIDTH/2][HEIGHT/2] = true;
     }
 
     // Place initial food
@@ -337,29 +358,45 @@ void drawScore() {
     }
 }
 
-void drawHomeScreen() {
- 
-   
-    // Set text color to white
-    glColor3f(0.0f, 0.0f, 1.0f);
 
-    // Draw "Start Game" button
-    glBegin(GL_QUADS);
-    glVertex2f(WIDTH / 2 - 10, HEIGHT / 2 - 2);
-    glVertex2f(WIDTH / 2 + 10, HEIGHT / 2 - 2);
-    glVertex2f(WIDTH / 2 + 10, HEIGHT / 2 + 2);
-    glVertex2f(WIDTH / 2 - 10, HEIGHT / 2 + 2);
-    glEnd();
+void drawHomeScreen() {
+    glColor3f(0.0f, 1.0f, 0.0f); // Green text
 
     // Draw "Start Game" text
-    float textPosX = WIDTH / 2 - 20;
-    float textPosY = HEIGHT / 2 + 1;
+    float startTextPosX = WIDTH / 2 - 4;
+    float startTextPosY = HEIGHT / 2;
 
-    glRasterPos2f(textPosX, textPosY);
-    const char* text = "Press ENTER";
-    glutBitmapString(GLUT_BITMAP_HELVETICA_10, (unsigned char*)text);
+    glRasterPos2f(startTextPosX, startTextPosY);
+    const char* startText = "Press ENTER";
+    glutBitmapString(GLUT_BITMAP_HELVETICA_18, (unsigned char*)startText);
+
+    // Draw map selection
+    glColor3f(0.0f, 1.0f, 1.0f); // Cyan text
+
+    float mapTextPosX = WIDTH / 2 - 4;
+    float mapTextPosY = HEIGHT / 2 - 1;
+
+    glRasterPos2f(mapTextPosX, mapTextPosY);
+    const char* mapText = "Select Map:";
+    glutBitmapString(GLUT_BITMAP_HELVETICA_12, (unsigned char*)mapText);
+
+    for (size_t i = 0; i < numMaps; i++) {
+        float mapPosX = WIDTH / 2 - 4;
+        float mapPosY = HEIGHT / 2 - 2 - i;
+
+        glRasterPos2f(mapPosX, mapPosY);
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, '1' + i);
+        glutBitmapString(GLUT_BITMAP_HELVETICA_12, (unsigned char*)mapList[i]->name);
+    }
+
+    // Highlight the selected map
+    glColor3f(1.0f, 0.0f, 0.0f); // Red text for selected map
+    float selectedMapPosX = WIDTH / 2 - 5;
+    float selectedMapPosY = HEIGHT / 2 - 2 - selectedMapIndex;
+
+    glRasterPos2f(selectedMapPosX, selectedMapPosY);
+    glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, '>');
 }
-
 
 
 
@@ -451,6 +488,7 @@ void update(int value) {
 void keyboard(unsigned char key, int x, int y) {
     if (currentScreen == HOME_SCREEN && key == 13) { // 13 is the ASCII code for Enter key
         currentScreen = GAME_SCREEN;
+        printf("ENTER pressed : %d",selectedMapIndex);
         initialize();  // Start the game
     } else {
         switch (key) {
@@ -477,10 +515,74 @@ void specialKeys(int key, int x, int y) {
                 if (snake.direction != 3) snake.direction = 1;
                 break;
         }
+    } else if (currentScreen == HOME_SCREEN) {
+        switch (key) {
+        case GLUT_KEY_UP:
+            if (selectedMapIndex > 0) {
+                selectedMapIndex--;
+            }
+            break;
+        case GLUT_KEY_DOWN:
+            if (selectedMapIndex < numMaps - 1) {
+                selectedMapIndex++;
+            }
+            break;
+    }
+    glutPostRedisplay(); // Redraw the screen to reflect the changes
     }
 }
 
+void loadMapsFromFile(const char* filename) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        printf("Error opening file.\n");
+        exit(1);
+    }
+
+    char line[1024];
+    fgets(line, sizeof(line), file);  // Read the header line and discard it
+
+    while (fgets(line, sizeof(line), file)) {
+        char *token;
+        token = strtok(line, ",");
+        // Remove quotes from the map name
+        strncpy(mapList[numMaps]->name, token + 1, strlen(token) - 2);
+        mapList[numMaps]->name[strlen(token) - 2] = '\0';  // Ensure null-termination
+
+        token = strtok(NULL, ",");
+        printf("token : %s",token);
+        char *coords = strtok(token, ";");  // Get the first coordinate
+        int i = 0;
+        while (coords != NULL && i < MAX_POINTS) {
+            // Skip the quotes if they exist in the coordinate string
+            if (coords[0] == '"') {
+                sscanf(coords + 1, "%d,%d", &mapList[numMaps]->schema[i].x, &mapList[numMaps]->schema[i].y);
+            } else {
+                sscanf(coords, "%d,%d", &mapList[numMaps]->schema[i].x, &mapList[numMaps]->schema[i].y);
+            }
+            i++;
+            coords = strtok(NULL, ";");  // Get the next coordinate
+        }
+        mapList[numMaps]->schemaSize = i;  // Store the size of the schema
+
+        numMaps++;
+    }
+
+    fclose(file);
+}
+
+
 int main(int argc, char** argv) {
+    loadMapsFromFile("E:\\projects\\snake-game\\resources\\maps.txt"); // Load maps from file
+   for (int i = 0; i < numMaps; i++) {
+        printf("Map Name: %s\n", mapList[i]->name);
+        printf("Schema Size: %d\n", mapList[i]->schemaSize);
+        for (int j = 0; j < mapList[i]->schemaSize; j++) {
+            printf("(%d, %d) ", mapList[i]->schema[j].x, mapList[i]->schema[j].y);
+        }
+        printf("\n\n");
+    }
+   
     initialize();
     
     
