@@ -578,7 +578,8 @@ void display()
         drawWalls();  // Draw walls
         drawBushes(); // Draw walls
         drawFood();   // Draw food
-        if (isMegaFruitSpawned) drawMegaFood(); // Draw food
+        if (isMegaFruitSpawned)
+            drawMegaFood(); // Draw food
         drawScorePanel();   // Draw panel
         drawScore();        // Draw the score panel
         if (snake.game_over)
@@ -650,8 +651,8 @@ void update(int value)
             // Check for collision with mega food
             if (snake.body[0].x == megaFood.x && snake.body[0].y == megaFood.y)
             {
-                snake.length+= 10;
-                snake.score += 10;  // Increase score by 10
+                snake.length += 10;
+                snake.score += 10; // Increase score by 10
                 isMegaFruitSpawned = false;
                 printf("Score: %d\n", snake.score); // Debug output
             }
@@ -710,7 +711,24 @@ void drawHomeScreen()
     glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, '>');
 
     glutPostRedisplay(); // Redraw the screen to reflect the changes
-    // glutTimerFunc(100, update, 0);
+}
+
+void restartGame()
+{
+    snake.length = 1;
+    snake.score = 0;
+    snake.game_over = false;
+    snake.direction = 1; // Start moving right
+
+    // Initial snake position
+    snake.body[0].x = WIDTH / 2;
+    snake.body[0].y = HEIGHT / 2;
+
+    // Generate initial food
+    generateFood();
+
+    glutPostRedisplay();
+    glutTimerFunc(0, update, 0); // Start the update function
 }
 
 void keyboard(unsigned char key, int x, int y)
@@ -720,6 +738,10 @@ void keyboard(unsigned char key, int x, int y)
         currentScreen = GAME_SCREEN;
         printf("ENTER pressed : %d", selectedMapIndex);
         initialize(); // Start the game
+    }
+    else if (currentScreen == GAME_SCREEN && snake.game_over)
+    {
+        restartGame();
     }
     else
     {
@@ -774,7 +796,6 @@ void specialKeys(int key, int x, int y)
             break;
         }
         glutPostRedisplay(); // Redraw the screen to reflect the changes
-        // glutTimerFunc(100, update, 0);
     }
 }
 
@@ -821,7 +842,7 @@ int main(int argc, char **argv)
 {
     loadMapsFromFile("E:\\projects\\snake-game\\resources\\maps.txt"); // Load maps from file
 
-    //initialize();
+    // initialize();
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
     glutInitWindowSize(WIDTH * 20, HEIGHT * 20);
