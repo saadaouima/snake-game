@@ -25,6 +25,9 @@ time_t lastFruitSpawnTime;
 double megaFruitSpawnInterval = 10.0; // Mega Fruit spawns every 10 seconds
 bool isMegaFruitSpawned = false;
 
+char userName[50] = ""; // Username buffer
+int userNameLength = 0; // Length of the entered username
+
 typedef enum
 {
     HOME_SCREEN,
@@ -126,7 +129,7 @@ void initialize()
 void drawCircle(GLfloat x, GLfloat y, GLfloat radius)
 {
     int i;
-    int triangleAmount = 20; // # of triangles used to draw circle
+    int triangleAmount = 20; // number of triangles used to draw circle
 
     // GLfloat radius = 0.8f; //radius
     GLfloat twicePi = 2.0f * PI;
@@ -494,33 +497,23 @@ void drawScorePanel()
     glVertex2f(WIDTH - PANEL_SIZE, HEIGHT - PANEL_SIZE);
     glEnd();
 
-    // Enable texture mapping
-    glEnable(GL_TEXTURE_2D);
-
-    // Bind the food texture
-    glBindTexture(GL_TEXTURE_2D, foodTextureID);
+    // Draw username text
+    glColor3f(1.0f, 1.0f, 1.0f); // White text color
 
     // Calculate the center position of the panel
     float panelCenterX = WIDTH - PANEL_SIZE / 2.0;
     float panelCenterY = HEIGHT - PANEL_SIZE / 2.0;
 
-    // Calculate the half size of the food icon
-    float halfIconSize = 0.5;
+    // Set the text size
+    int textWidth = glutBitmapLength(GLUT_BITMAP_HELVETICA_18, (unsigned char *)userName);
+    int textHeight = 18;
 
-    // Set texture coordinates to center the icon
-    glBegin(GL_QUADS);
-    glTexCoord2f(0.0f, 0.0f);
-    glVertex2f(panelCenterX - halfIconSize, panelCenterY - halfIconSize);
-    glTexCoord2f(1.0f, 0.0f);
-    glVertex2f(panelCenterX + halfIconSize, panelCenterY - halfIconSize);
-    glTexCoord2f(1.0f, 1.0f);
-    glVertex2f(panelCenterX + halfIconSize, panelCenterY + halfIconSize);
-    glTexCoord2f(0.0f, 1.0f);
-    glVertex2f(panelCenterX - halfIconSize, panelCenterY + halfIconSize);
-    glEnd();
+    // Calculate the starting position to center the text
+    float textPosX = panelCenterX - textWidth / 2.0;
+    float textPosY = panelCenterY + textHeight / 4.0; // Adjusted for centering
 
-    // Disable texture mapping
-    glDisable(GL_TEXTURE_2D);
+    glRasterPos2f(textPosX, textPosY);
+    glutBitmapString(GLUT_BITMAP_HELVETICA_18, (unsigned char *)userName);
 }
 
 void drawScore()
@@ -583,7 +576,11 @@ void display()
         drawScorePanel();   // Draw panel
         drawScore();        // Draw the score panel
         if (snake.game_over)
+        {
+            // Save game data to a file
+            saveGameData("E:\\projects\\snake-game\\resources\\game_data.csv");
             drawGameOver();
+        }
         break;
     }
 
@@ -670,23 +667,99 @@ void update(int value)
     }
 }
 
+/*void readTopScores(const char *fileName, int topScores[][2], int *numScores)
+{
+    FILE *file = fopen(fileName, "r");
+
+    if (file == NULL)
+    {
+        printf("Error opening file!\n");
+        return;
+    }
+
+    char line[256];
+    char *token;
+    int i = 0;
+
+    while (fgets(line, sizeof(line), file) && i < 10) // Read up to 10 scores
+    {
+       // printf("Read line: %s\n", line); // Print the read line to console
+
+        token = strtok(line, ";");
+        strcpy(userName, token); // Copy the username from the file
+        token = strtok(NULL, ";");
+        strcpy(mapList[selectedMapIndex], token); // Copy the map name from the file
+        token = strtok(NULL, ";");
+        topScores[i][1] = atoi(token); // Convert and store the score
+        i++;
+    }
+
+    *numScores = i;
+
+    fclose(file);
+}*/
+
 void drawHomeScreen()
 {
-    glColor3f(0.0f, 1.0f, 0.0f); // Green text
+
+    /* Draw top 3 scores
+    int topScores[10][2];
+    int numScores = 0;
+    readTopScores("E:\\projects\\snake-game\\resources\\game_data.csv", topScores, &numScores);*/
+
+    // Sort top scores
+    /*for (int i = 0; i < numScores - 1; i++)
+    {
+        for (int j = i + 1; j < numScores; j++)
+        {
+            if (topScores[i][1] < topScores[j][1])
+            {
+                int tempScore = topScores[i][1];
+                topScores[i][1] = topScores[j][1];
+                topScores[j][1] = tempScore;
+
+                char tempName[50];
+                strcpy(tempName, userName);
+                strcpy(userName, userName);
+                strcpy(userName, tempName);
+            }
+        }
+    }
+
+    glColor3f(0.0f, 0.0f, 0.0f); // White text color
+
+    // Draw top scores
+    for (int i = 0; i < 3 && i < numScores; i++)
+    {
+        char scoreStr[50];
+        sprintf(scoreStr, "%d. %s - %d", i + 1, userName, topScores[i][1]);
+
+        //printf("output : %S \n",scoreStr);
+
+        float scorePosX = WIDTH / 2 +2;
+        float scorePosY = HEIGHT / 2 + 3 - i ;
+
+        glRasterPos2f(scorePosX, scorePosY);
+        glutBitmapString(GLUT_BITMAP_HELVETICA_18, (unsigned char *)scoreStr);
+    }
+
+    glColor3f(0.0f, 1.0f, 0.0f);*/ 
+    
+    // Green text
 
     // Draw "Start Game" text
     float startTextPosX = WIDTH / 2 - 4;
-    float startTextPosY = HEIGHT / 2;
+    float startTextPosY = HEIGHT / 2 + 2;
 
     glRasterPos2f(startTextPosX, startTextPosY);
-    const char *startText = "Press ENTER";
+    const char *startText = "Press ENTER to Start";
     glutBitmapString(GLUT_BITMAP_HELVETICA_18, (unsigned char *)startText);
 
     // Draw map selection
     glColor3f(0.0f, 0.0f, 0.0f); // Cyan text
 
     float mapTextPosX = WIDTH / 2 - 4;
-    float mapTextPosY = HEIGHT / 2 - 1;
+    float mapTextPosY = HEIGHT / 2;
 
     glRasterPos2f(mapTextPosX, mapTextPosY);
     const char *mapText = "Select Map:";
@@ -695,7 +768,7 @@ void drawHomeScreen()
     for (size_t i = 0; i < numMaps; i++)
     {
         float mapPosX = WIDTH / 2 - 4;
-        float mapPosY = HEIGHT / 2 - 2 - i;
+        float mapPosY = HEIGHT / 2 - 1 - i;
 
         glRasterPos2f(mapPosX, mapPosY);
         glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, '1' + i);
@@ -705,20 +778,62 @@ void drawHomeScreen()
     // Highlight the selected map
     glColor3f(1.0f, 0.0f, 0.0f); // Red text for selected map
     float selectedMapPosX = WIDTH / 2 - 5;
-    float selectedMapPosY = HEIGHT / 2 - 2 - selectedMapIndex;
+    float selectedMapPosY = HEIGHT / 2 - 1 - selectedMapIndex;
 
     glRasterPos2f(selectedMapPosX, selectedMapPosY);
     glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, '>');
 
+    // Draw username input box
+    glColor3f(0.0f, 0.0f, 0.0f); // Black text
+
+    float usernameTextPosX = WIDTH / 2 - 4;
+    float usernameTextPosY = HEIGHT / 2 - 3;
+
+    glRasterPos2f(usernameTextPosX, usernameTextPosY);
+    const char *usernameText = "Enter Username:";
+    glutBitmapString(GLUT_BITMAP_HELVETICA_12, (unsigned char *)usernameText);
+
+    glColor3f(0.0f, 0.0f, 0.0f); // White text for username input
+
+    float usernameInputPosX = WIDTH / 2 + 3;
+    float usernameInputPosY = HEIGHT / 2 - 3;
+
+    glRasterPos2f(usernameInputPosX, usernameInputPosY);
+    glutBitmapString(GLUT_BITMAP_HELVETICA_12, (unsigned char *)userName);
+
     glutPostRedisplay(); // Redraw the screen to reflect the changes
+}
+
+void saveGameData(const char *fileName)
+{
+    FILE *file = fopen(fileName, "a"); // Open the file in append mode
+
+    if (file == NULL)
+    {
+        printf("Error opening file!\n");
+        return;
+    }
+
+    // Write the data to the file in CSV format
+    fprintf(file, "%s;%s;%d\n", userName, mapList[selectedMapIndex], snake.score);
+
+    fclose(file); // Close the file
 }
 
 void restartGame()
 {
-    snake.length = 1;
+    printf("restart game !!");
+    snake.length = 10;
     snake.score = 0;
     snake.game_over = false;
     snake.direction = 1; // Start moving right
+
+    // Empty snake's body
+    for (int i = 0; i < WIDTH * HEIGHT; i++)
+    {
+        snake.body[i].x = -1; // Set x to -1 to indicate an empty point
+        snake.body[i].y = -1; // Set y to -1 to indicate an empty point
+    }
 
     // Initial snake position
     snake.body[0].x = WIDTH / 2;
@@ -728,16 +843,36 @@ void restartGame()
     generateFood();
 
     glutPostRedisplay();
-    glutTimerFunc(0, update, 0); // Start the update function
+    glutTimerFunc(100, update, 0); // Start the update function
 }
 
 void keyboard(unsigned char key, int x, int y)
 {
-    if (currentScreen == HOME_SCREEN && key == 13)
-    { // 13 is the ASCII code for Enter key
-        currentScreen = GAME_SCREEN;
-        printf("ENTER pressed : %d", selectedMapIndex);
-        initialize(); // Start the game
+    if (currentScreen == HOME_SCREEN)
+    {
+        switch (key)
+        {
+        case 13: // Enter key
+                 // 13 is the ASCII code for Enter key
+            currentScreen = GAME_SCREEN;
+            printf("ENTER pressed : %d", selectedMapIndex);
+            initialize(); // Start the game
+
+        case 8: // Backspace key
+            if (userNameLength > 0)
+            {
+                userName[--userNameLength] = '\0';
+            }
+            break;
+
+        default:
+            if (userNameLength < sizeof(userName) - 1)
+            {
+                userName[userNameLength++] = key;
+                userName[userNameLength] = '\0';
+            }
+            break;
+        }
     }
     else if (currentScreen == GAME_SCREEN && snake.game_over)
     {
@@ -820,7 +955,7 @@ void loadMapsFromFile(const char *filename)
         mapList[numMaps]->name[strlen(token) - 2] = '\0'; // Ensure null-termination
 
         token = strtok(NULL, ",");
-        printf("token : %s", token);
+        //printf("token : %s", token);
         char *coords = strtok(token, ";"); // Get the first coordinate
         int i = 0;
         while (coords != NULL && i < MAX_POINTS)
@@ -828,7 +963,7 @@ void loadMapsFromFile(const char *filename)
             sscanf(coords, "%d|%d", &mapList[numMaps]->schema[i].x, &mapList[numMaps]->schema[i].y);
             i++;
             coords = strtok(NULL, ";"); // Get the next coordinate
-            printf("coor : %d", coords);
+            printf("coor : %s", coords);
         }
         mapList[numMaps]->schemaSize = i; // Store the size of the schema
 
